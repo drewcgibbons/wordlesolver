@@ -26,6 +26,8 @@ def run(num_recs):
         match_str = input()
         match_arr = [*(match_str.upper())]
 
+        print(match_arr)
+
         eliminate_missed_letters(match_arr, guessed_arr, occupied_indices)
 
         # Update board
@@ -34,22 +36,24 @@ def run(num_recs):
         # Eliminate letters missed from map
         suggestions = get_suggestions(board, num_recs, occupied_indices)
 
-        # print(suggestions)
-
-        break
+        print(suggestions)
 
         guesses += 1
 
 def eliminate_missed_letters(match, guess, occ_ix):
+    print(letter_map)
     for guess_letter, match_letter, i in zip(guess, match, list(range(0, len(guess)))):
-        if match_letter.upper() == "N":
+        if match_letter.upper() == "N" and letter_map[guess_letter] == 0:
             letter_map[guess_letter] = -1
         
         elif match_letter.upper() == "G": 
             if letter_map[guess_letter] == 0:
                 letter_map[guess_letter] = {i}
-            elif i not in occ_ix:
-                letter_map[guess_letter] = letter_map[guess_letter] + {i}
+            else:
+                print(guess_letter)
+                print(i)
+                letter_map[guess_letter].add(i)
+                print(letter_map)
             occ_ix.append(i)
     
         elif match_letter.upper() == "Y":
@@ -79,7 +83,7 @@ def get_suggestions(board, num_suggestions, occ_ix):
     # build like string with wildcards
     for tile in board:
         if tile.get_correct_place() is True:
-            like_str = like_str + tile.get_char()
+            like_str = like_str + tile.get_char().lower()
         # elif tile.get_in_word is True and tile.get_correct_place is False:
         #     pass
         #     #TODO: filter potential words based on this
@@ -114,12 +118,14 @@ def remove_eliminated_letters(df, board, occ_ix):
                     ix_list.append(ix[0])
         
         elif letter_map[letter] != 0:
-            print(letter)
+            # print(letter)
             for word in df['Word']:
                 valid = False
+                # print(letter_map)
+                # print(letter_map[letter])
                 for ix in letter_map[letter]:
                     if word[ix].lower() == letter.lower():
-                        print(word)
+                        # print(word)
                         valid = True
                         break
                 if valid == False:
@@ -127,10 +133,8 @@ def remove_eliminated_letters(df, board, occ_ix):
                     ix_list.append(ix[0])
 
     df = df.drop(df.index[ix_list])
-
-    print(df)
     
-    # return df
+    return df
 
 if __name__ == "__main__":
     run(num_recs= 1000)
