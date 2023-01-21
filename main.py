@@ -3,30 +3,35 @@ import re
 import pandas as pd
 from db import run_query
 from guessed_letter_map import guessed_letters as letter_map
+from guessed_letter_map import impossible_letters as impossible_map
 
 def run(num_recs):
     board = []
     for i in range(0,5):
         board.append(Tile())
 
-    guesses = 0
+    guesses = 1
     occupied_indices = []
     
     match_arr = ['N', 'N', 'N', 'N', 'N']
     word_match_arr = ['N', 'N', 'N', 'N', 'N']
 
-    while guesses < 6:
-        print("Enter guessed word")
+    while guesses <= 6:
+        print("Guess #" + str(guesses))
+        print("Enter guess")
         guessed_str = input()
         guessed_arr = [*(guessed_str.upper())]
         # Eliminate guessed word
-
 
         print("Enter matches. G for green, Y for yellow, N for no match")
         match_str = input()
         match_arr = [*(match_str.upper())]
 
-        print(match_arr)
+        if match_arr == ['G', 'G', 'G', 'G', 'G']:
+            print("Correct Answer!")
+            exit()
+
+        # print(match_arr)
 
         eliminate_missed_letters(match_arr, guessed_arr, occupied_indices)
 
@@ -41,26 +46,41 @@ def run(num_recs):
         guesses += 1
 
 def eliminate_missed_letters(match, guess, occ_ix):
-    print(letter_map)
     for guess_letter, match_letter, i in zip(guess, match, list(range(0, len(guess)))):
         if match_letter.upper() == "N" and letter_map[guess_letter] == 0:
             letter_map[guess_letter] = -1
+
+        if match_letter.upper() == "N" and impossible_map[guess_letter] == 0:
+
+            if not isinstance(impossible_map[guess_letter], set):
+                impossible_map[guess_letter] = {i}
+            else:
+                impossible_map[guess_letter].add(i)
         
         elif match_letter.upper() == "G": 
             if letter_map[guess_letter] == 0:
                 letter_map[guess_letter] = {i}
             else:
-                print(guess_letter)
-                print(i)
+                # print(guess_letter)
+                # print(i)
+
+                if not isinstance(letter_map[guess_letter], set):
+                    letter_map[guess_letter] = {i}
                 letter_map[guess_letter].add(i)
-                print(letter_map)
-            occ_ix.append(i)
+                occ_ix.append(i)
     
         elif match_letter.upper() == "Y":
             potential_indices_set = {0,1,2,3,4}
             occ_ix_set = set(occ_ix)
             potential_indices_set = potential_indices_set - occ_ix_set - {i}
             letter_map[guess_letter] = potential_indices_set
+            
+            if not isinstance(impossible_map[guess_letter], set):
+                impossible_map[guess_letter] = {i}
+            else:
+                impossible_map[guess_letter].add(i)
+    print(impossible_map)
+    print(letter_map)
 
 def update_board(board, match_arr, guessed_arr):
     for tile, match, guess in zip(board, match_arr, guessed_arr):
@@ -127,14 +147,27 @@ def remove_eliminated_letters(df, board, occ_ix):
                     if word[ix].lower() == letter.lower():
                         # print(word)
                         valid = True
-                        break
+                
                 if valid == False:
                     ix = df[df['Word'] == word.lower()].index
                     ix_list.append(ix[0])
+                
+                valid = True
+
+                if (isinstance(impossible_map[letter], set)):
+                    for ix in impossible_map[letter]:
+                        if word[ix].lower() == letter.lower():
+                            # print(word)
+                            valid = False
+                            break
+                    
+                    if valid == False:
+                        ix = df[df['Word'] == word.lower()].index
+                        ix_list.append(ix[0])
 
     df = df.drop(df.index[ix_list])
     
     return df
 
 if __name__ == "__main__":
-    run(num_recs= 1000)
+    run(num_recs= 5000)
